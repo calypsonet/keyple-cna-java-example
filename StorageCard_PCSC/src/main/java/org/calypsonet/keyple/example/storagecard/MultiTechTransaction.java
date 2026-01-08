@@ -19,12 +19,7 @@ import org.eclipse.keyple.plugin.pcsc.*;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
-import org.eclipse.keypop.calypso.card.transaction.CardIOException;
-import org.eclipse.keypop.calypso.card.transaction.ReaderIOException;
-import org.eclipse.keypop.calypso.card.transaction.UnexpectedCommandStatusException;
-import org.eclipse.keypop.reader.CardReader;
-import org.eclipse.keypop.reader.ConfigurableCardReader;
-import org.eclipse.keypop.reader.ReaderApiFactory;
+import org.eclipse.keypop.reader.*;
 import org.eclipse.keypop.reader.selection.BasicCardSelector;
 import org.eclipse.keypop.reader.selection.CardSelectionManager;
 import org.eclipse.keypop.reader.selection.CardSelectionResult;
@@ -33,7 +28,6 @@ import org.eclipse.keypop.reader.selection.spi.SmartCard;
 import org.eclipse.keypop.storagecard.card.ProductType;
 import org.eclipse.keypop.storagecard.card.StorageCard;
 import org.eclipse.keypop.storagecard.card.StorageCardSelectionExtension;
-import org.eclipse.keypop.storagecard.transaction.ChannelControl;
 import org.eclipse.keypop.storagecard.transaction.StorageCardTransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,12 +199,14 @@ public class MultiTechTransaction {
    * <p>This method handles the high-level flow while delegating specific operations to specialized
    * methods for better code organization and error handling.
    *
-   * @throws UnexpectedCommandStatusException if card returns unexpected status codes
-   * @throws ReaderIOException if reader communication fails
-   * @throws CardIOException if card communication fails
+   * @throws InvalidCardResponseException if card returns unexpected status codes
+   * @throws ReaderCommunicationException if reader communication fails
+   * @throws CardCommunicationException if card communication fails
    */
   public void execute()
-      throws UnexpectedCommandStatusException, ReaderIOException, CardIOException {
+      throws InvalidCardResponseException,
+          ReaderCommunicationException,
+          CardCommunicationException {
     // Pre-condition: Ensure a card is present before attempting operations
     checkCardPresent();
 
@@ -240,12 +236,14 @@ public class MultiTechTransaction {
    *   <li><b>Storage Cards:</b> Block-based memory operations, simple read/write
    * </ul>
    *
-   * @throws UnexpectedCommandStatusException if card operations fail
-   * @throws ReaderIOException if reader communication fails
-   * @throws CardIOException if card communication fails
+   * @throws InvalidCardResponseException if card operations fail
+   * @throws ReaderCommunicationException if reader communication fails
+   * @throws CardCommunicationException if card communication fails
    */
   private void processCard()
-      throws UnexpectedCommandStatusException, ReaderIOException, CardIOException {
+      throws InvalidCardResponseException,
+          ReaderCommunicationException,
+          CardCommunicationException {
 
     // STEP 1: Card Selection - Try all configured protocols until one succeeds
     logger.info("Starting multi-technology card selection...");
@@ -340,12 +338,14 @@ public class MultiTechTransaction {
    * </ol>
    *
    * @param card The selected storage card instance
-   * @throws UnexpectedCommandStatusException if card operations fail
-   * @throws ReaderIOException if reader communication fails
-   * @throws CardIOException if card communication fails
+   * @throws InvalidCardResponseException if card operations fail
+   * @throws ReaderCommunicationException if reader communication fails
+   * @throws CardCommunicationException if card communication fails
    */
   private void processStorageCard(StorageCard card)
-      throws UnexpectedCommandStatusException, ReaderIOException, CardIOException {
+      throws InvalidCardResponseException,
+          ReaderCommunicationException,
+          CardCommunicationException {
 
     logger.info("=== Storage Card Operations ===");
     logger.info("Card type: {}", card.getProductType());
@@ -367,7 +367,9 @@ public class MultiTechTransaction {
     // storageCardExtensionService.getContextSetting().disableMultiBlockReadMode();
 
     StorageCardTransactionManager transaction =
-        storageCardExtensionService.createStorageCardTransactionManager(cardReader, card);
+        storageCardExtensionService
+            .getStorageCardApiFactory()
+            .createStorageCardTransactionManager(cardReader, card);
 
     // OPERATION 1: Read all blocks to get complete memory content
     logger.info("Reading all memory blocks...");
@@ -540,6 +542,7 @@ public class MultiTechTransaction {
     // Storage card selection extension enables memory operations during selection
     StorageCardSelectionExtension storageExtensionMifareUltraLight =
         StorageCardExtensionService.getInstance()
+            .getStorageCardApiFactory()
             .createStorageCardSelectionExtension(ProductType.MIFARE_ULTRALIGHT)
             // Pre-read all blocks during selection for immediate availability
             .prepareReadBlocks(0, ProductType.MIFARE_ULTRALIGHT.getBlockCount() - 1);
@@ -561,6 +564,7 @@ public class MultiTechTransaction {
 
     StorageCardSelectionExtension storageExtensionSt25 =
         StorageCardExtensionService.getInstance()
+            .getStorageCardApiFactory()
             .createStorageCardSelectionExtension(ProductType.ST25_SRT512)
             // Pre-read all blocks during selection for immediate availability
             .prepareReadBlocks(0, ProductType.ST25_SRT512.getBlockCount() - 1);
@@ -767,7 +771,7 @@ public class MultiTechTransaction {
       logger.info("2. Compatible reader is connected");
       logger.info("3. Card is properly placed on reader");
 
-    } catch (UnexpectedCommandStatusException e) {
+    } catch (InvalidCardResponseException e) {
       // Handle card command errors
       logger.error("Card command failed: {}", e.getMessage());
       logger.info("This may indicate:");
@@ -775,7 +779,7 @@ public class MultiTechTransaction {
       logger.info("2. Card is damaged or corrupted");
       logger.info("3. Security conditions are not met");
 
-    } catch (ReaderIOException e) {
+    } catch (ReaderCommunicationException e) {
       // Handle reader communication errors
       logger.error("Reader communication error: {}", e.getMessage());
       logger.info("Please check:");
@@ -783,7 +787,7 @@ public class MultiTechTransaction {
       logger.info("2. PC/SC service is running");
       logger.info("3. No other application is blocking the reader");
 
-    } catch (CardIOException e) {
+    } catch (CardCommunicationException e) {
       // Handle card communication errors
       logger.error("Card communication error: {}", e.getMessage());
       logger.info("This may indicate:");
