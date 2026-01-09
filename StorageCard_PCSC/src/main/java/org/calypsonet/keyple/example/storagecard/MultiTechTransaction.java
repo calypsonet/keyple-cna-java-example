@@ -25,6 +25,7 @@ import org.eclipse.keypop.reader.selection.CardSelectionManager;
 import org.eclipse.keypop.reader.selection.CardSelectionResult;
 import org.eclipse.keypop.reader.selection.IsoCardSelector;
 import org.eclipse.keypop.reader.selection.spi.SmartCard;
+import org.eclipse.keypop.storagecard.MifareClassicKeyType;
 import org.eclipse.keypop.storagecard.card.ProductType;
 import org.eclipse.keypop.storagecard.card.StorageCard;
 import org.eclipse.keypop.storagecard.card.StorageCardSelectionExtension;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li><b>Calypso cards</b> (ISO 14443-4) - Complex file structures, cryptographic operations
  *   <li><b>MIFARE Ultralight</b> - Simple memory cards with block-based access
+ *   <li><b>MIFARE Classic</b> - Sector-based memory cards with authentication
  *   <li><b>ST25/SRT512</b> - STMicroelectronics memory tags with block-based access
  * </ul>
  *
@@ -94,7 +96,7 @@ public class MultiTechTransaction {
    * <p><b>Note:</b> Modify this pattern based on your available readers. Use {@code
    * plugin.getReaderNames()} to see available reader names.
    */
-  private static final String READER_REGEX = ".*ASK LoGO.*|.*Contactless.*";
+  private static final String READER_REGEX = ".*ASK LoGO.*|.*GEN5XX.*|.*Contactless.*";
 
   /**
    * Logical protocol identifiers used by the application.
@@ -109,6 +111,8 @@ public class MultiTechTransaction {
 
   private static final String MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL =
       "MIFARE_ULTRALIGHT"; // For MIFARE UL cards
+  private static final String MIFARE_CLASSIC_LOGICAL_PROTOCOL =
+      "MIFARE_CLASSIC"; // For MIFARE Classic cards
   private static final String ST25_SRT512_LOGICAL_PROTOCOL = "ST25_SRT512"; // For ST25 memory tags
 
   /**
@@ -266,8 +270,9 @@ public class MultiTechTransaction {
       logger.info("Processing Calypso card...");
       processCalypsoCard((CalypsoCard) smartCard);
     } else if (smartCard instanceof StorageCard) {
-      // Storage cards provide simple block-based memory access
-      logger.info("Processing storage card...");
+      // Storage Cards (MIFARE Ultralight, Classic, ST25...) share a common block-based memory model
+      // The API abstracts differences, allowing unified processing once access control is handled.
+      logger.info("Processing Storage card...");
       processStorageCard((StorageCard) smartCard);
     } else {
       logger.warn("Unknown card type: {}", smartCard.getClass().getName());
@@ -312,35 +317,17 @@ public class MultiTechTransaction {
   }
 
   /**
-   * Processes storage cards with block-based memory operations.
+   * Orchestrates the processing of any Storage Card (MIFARE Ultralight, Classic, ST25, etc.).
    *
-   * <p><b>Storage Card Memory Model:</b> Storage cards organize memory in fixed-size blocks
-   * (typically 4 bytes per block). Different card types have different memory layouts:
-   *
-   * <ul>
-   *   <li><b>MIFARE Ultralight:</b> 16 blocks (64 bytes total)
-   *   <li><b>ST25 SRT512:</b> 128 blocks (512 bytes total)
-   * </ul>
-   *
-   * <p><b>Memory Protection:</b>
-   *
-   * <ul>
-   *   <li><b>Blocks 0-3:</b> Often contain manufacturer data and are read-only or OTP
-   *   <li><b>Block 4+:</b> User data area, typically read/write accessible
-   * </ul>
-   *
-   * <p><b>Transaction Pattern:</b> Storage card operations use a prepare-then-execute pattern for
-   * efficiency:
+   * <p><b>Unified Workflow:</b>
    *
    * <ol>
-   *   <li>Prepare multiple operations (read/write commands)
-   *   <li>Execute all operations in a single transaction
+   *   <li><b>Transaction Setup:</b> Create a unified transaction manager.
+   *   <li><b>Access Control:</b> Handle technology-specific authentication (e.g., MIFARE Classic).
+   *   <li><b>Data Operations:</b> Perform common read/write operations using the unified block API.
    * </ol>
    *
-   * @param card The selected storage card instance
-   * @throws InvalidCardResponseException if card operations fail
-   * @throws ReaderCommunicationException if reader communication fails
-   * @throws CardCommunicationException if card communication fails
+   * @param card The detected storage card.
    */
   private void processStorageCard(StorageCard card)
       throws InvalidCardResponseException,
@@ -348,85 +335,155 @@ public class MultiTechTransaction {
           CardCommunicationException {
 
     logger.info("=== Storage Card Operations ===");
-    logger.info("Card type: {}", card.getProductType());
+    logger.info("Card Product: {}", card.getProductType());
 
-    // Storage cards organize memory in fixed-size blocks
-    int lastBlock = card.getProductType().getBlockCount() - 1;
-    logger.info("Memory organization: {} blocks (0 to {})", lastBlock + 1, lastBlock);
-
-    // Log initial card content (data read during selection)
-    logger.info("Initial card memory content:");
-    logCardMemoryContent(card);
-
-    // Create transaction manager for memory operations
-    // The transaction manager batches operations for efficiency
+    // 1. Transaction Setup
     StorageCardExtensionService storageCardExtensionService =
         StorageCardExtensionService.getInstance();
-
-    // Optional: Disable multi-block read mode for compatibility with some cards
-    // storageCardExtensionService.getContextSetting().disableMultiBlockReadMode();
-
     StorageCardTransactionManager transaction =
         storageCardExtensionService
             .getStorageCardApiFactory()
             .createStorageCardTransactionManager(cardReader, card);
 
-    // OPERATION 1: Read all blocks to get complete memory content
-    logger.info("Reading all memory blocks...");
-    transaction.prepareReadBlocks(0, lastBlock);
-    transaction.processCommands(ChannelControl.KEEP_OPEN); // Keep channel for more operations
+    // 2. Access Control (Technology Specific)
+    handleStorageAccessControl(card, transaction);
 
-    logger.info("Memory content after full read:");
-    logCardMemoryContent(card);
-
-    // OPERATION 2: Write demonstration - increment each byte in user data area
-    // Start from block 4 to avoid overwriting manufacturer data/OTP areas
-    // Blocks 0-3 often contain:
-    // - Block 0: UID (Unique Identifier) - Read-only
-    // - Block 1-2: Manufacturer data - Often read-only
-    // - Block 3: OTP (One-Time Programmable) - Write once only
-    logger.info("Writing incremented values to user data blocks (4 to {})...", lastBlock);
-
-    for (int i = 4; i <= lastBlock; i++) {
-      byte[] incrementedData = incrementBlock(card, i);
-      transaction.prepareWriteBlocks(i, incrementedData);
-      logger.debug("Prepared write for block {}: {}", i, HexUtil.toHex(incrementedData));
-    }
-
-    // Execute all write operations
-    transaction.processCommands(ChannelControl.KEEP_OPEN);
-
-    // OPERATION 3: Read all blocks again to verify write operations
-    logger.info("Reading memory after write operations...");
-    transaction.prepareReadBlocks(0, lastBlock);
-    transaction.processCommands(ChannelControl.CLOSE_AFTER); // Close channel when done
-
-    logger.info("Final memory content:");
-    logCardMemoryContent(card);
+    // 3. Data Operations (Common to all Storage Cards)
+    performStorageDataOperations(card, transaction);
 
     logger.info("Storage card operations completed successfully.");
   }
 
   /**
+   * Handles access control logic specific to certain storage card technologies.
+   *
+   * <p>While the Memory API is unified, some cards (like MIFARE Classic) require authentication
+   * before sectors can be accessed.
+   *
+   * @param card The storage card.
+   * @param transaction The active transaction manager.
+   */
+  private void handleStorageAccessControl(
+      StorageCard card, StorageCardTransactionManager transaction) {
+    if (card.getProductType().hasAuthentication()) {
+      logger.info("-> Performing Access Control for MIFARE Classic...");
+      // Authenticate to Sector 1 (Block 4) using Key A (Default: FF...FF)
+      byte[] defaultKey =
+          new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
+
+      // The transaction manager buffers this command to be executed with the next batch
+      transaction.prepareMifareClassicAuthenticate(4, MifareClassicKeyType.KEY_A, defaultKey);
+      logger.info("   Authentication command added to transaction.");
+    } else {
+      logger.info("-> No specific access control required for this card type.");
+    }
+  }
+
+  /**
+   * Performs common data operations (Read/Write) applicable to all Storage Cards.
+   *
+   * <p><b>Abstraction Power:</b> This method works identically for MIFARE Ultralight, Classic,
+   * ST25, etc. The API abstracts the underlying protocol differences.
+   *
+   * <p><b>Keyple Transaction Pattern (Buffering):</b> <br>
+   * Keyple operations are not executed immediately. Instead, they are "prepared" (buffered) in the
+   * transaction manager. The <code>processCommands()</code> method then sends all buffered commands
+   * to the card in a single efficient batch (or sequentially).
+   *
+   * @param card The storage card (for capacity info).
+   * @param transaction The transaction manager to execute commands.
+   */
+  private void performStorageDataOperations(
+      StorageCard card, StorageCardTransactionManager transaction)
+      throws InvalidCardResponseException,
+          ReaderCommunicationException,
+          CardCommunicationException {
+
+    // Metadata retrieval from ProductType
+    ProductType productType = card.getProductType();
+    int blockCount = productType.getBlockCount();
+    int blockSize = productType.getBlockSize();
+    int totalCapacity = blockCount * blockSize;
+
+    logger.info(
+        "Memory Analysis: {} blocks of {} bytes each. Total capacity: {} bytes.",
+        blockCount,
+        blockSize,
+        totalCapacity);
+
+    // --- OPERATION 1: Memory Read ---
+    logger.info("-> Reading card memory...");
+
+    int startBlock = 0;
+    int endBlock = blockCount - 1;
+
+    // Specific logic for MIFARE Classic to focus on the authenticated sector in this demo
+    if (productType == ProductType.MIFARE_CLASSIC_1K) {
+      startBlock = 4;
+      endBlock = 7; // Sector 1 (blocks 4 to 7)
+      logger.info("   (MIFARE Classic: targeting authenticated Sector 1, blocks 4 to 7)");
+    }
+
+    transaction.prepareReadBlocks(startBlock, endBlock);
+    transaction.processCommands(ChannelControl.KEEP_OPEN);
+
+    logger.info("   Data successfully synchronized in local cache.");
+    logCardMemoryContent(card);
+
+    // --- OPERATION 2: Write / Modify Data ---
+    // We target a "User Block" (Block 4 is usually safe for all supported cards)
+    int targetBlock = 4;
+
+    logger.info("-> Modifying Block {} (writing {} bytes)...", targetBlock, blockSize);
+    byte[] incrementedData = incrementBlock(card, targetBlock);
+
+    transaction.prepareWriteBlocks(targetBlock, incrementedData);
+    transaction.processCommands(ChannelControl.KEEP_OPEN);
+    logger.debug("   Write command confirmed by card.");
+
+    // --- OPERATION 3: Verify and Display Final State ---
+    logger.info("-> Verifying final state of Block {}...", targetBlock);
+    transaction.prepareReadBlocks(targetBlock, targetBlock);
+    transaction.processCommands(ChannelControl.CLOSE_AFTER);
+
+    byte[] finalData = card.getBlock(targetBlock);
+    logger.info(
+        "   Block {} Content: {}", HexUtil.toHex((byte) targetBlock), HexUtil.toHex(finalData));
+  }
+
+  /**
    * Logs the complete memory content of a storage card.
    *
-   * <p>This utility method reads all blocks from the card and displays them as a continuous
-   * hexadecimal string for easy analysis and debugging.
-   *
-   * <p>The memory is displayed as: BLOCK0BLOCK1BLOCK2...BLOCKn where each block is typically 4
-   * bytes (8 hex characters).
+   * <p>This utility method iterates through all blocks of the card and displays the content of
+   * those that have been read. This handles cards with different block sizes and counts (e.g.,
+   * MIFARE Ultralight vs MIFARE Classic) and partial reads correctly.
    *
    * @param card The storage card to read memory from
    */
   private static void logCardMemoryContent(StorageCard card) {
     try {
-      // Read all blocks from 0 to the last available block
-      byte[] memoryContent = card.getBlocks(0, card.getProductType().getBlockCount() - 1);
-      String hexContent = HexUtil.toHex(memoryContent);
+      ProductType productType = card.getProductType();
+      int blockCount = productType.getBlockCount();
+      int blockSize = productType.getBlockSize();
 
-      logger.info("Complete memory content ({} bytes): {}", memoryContent.length, hexContent);
+      logger.info("Card Memory Dump ({} blocks of {} bytes):", blockCount, blockSize);
+
+      for (int i = 0; i < blockCount; i++) {
+        try {
+          // Retrieve the block data from the card object (local cache)
+          byte[] data = card.getBlock(i);
+
+          // Only log blocks that have actually been read/populated
+          // Note: getBlock() might return null or throw exception if data is not available
+          if (data != null && data.length > 0) {
+            logger.info("  Block {} Content: {}", HexUtil.toHex((byte) i), HexUtil.toHex(data));
+          }
+        } catch (Exception e) {
+          // Ignore errors for blocks that haven't been read or are inaccessible
+        }
+      }
     } catch (Exception e) {
-      logger.error("Failed to read card memory content: {}", e.getMessage());
+      logger.error("Failed to process card memory content: {}", e.getMessage());
     }
   }
 
@@ -527,11 +584,13 @@ public class MultiTechTransaction {
     manager.prepareSelection(isoSelector, calypsoExtension);
 
     // ===========================================================================================
-    // SELECTION STRATEGY 2: MIFARE Ultralight cards using protocol-based selection
+    // STORAGE CARD SELECTION STRATEGIES
     // ===========================================================================================
+    // Strategy: We register multiple selectors. The CardSelectionManager will automatically
+    // detect the card's protocol and execute the corresponding selection extension.
 
-    // MIFARE Ultralight cards are identified by their communication protocol
-    // This covers the most common type of storage cards in NFC applications
+    // --- STRATEGY 2: MIFARE Ultralight (NFC Type 2) ---
+    // If the card uses the MIFARE_ULTRALIGHT protocol, we treat it as a MIFARE_ULTRALIGHT product.
     logger.debug("Configuring MIFARE Ultralight selection (protocol-based)...");
 
     BasicCardSelector mifareUltralightSelector =
@@ -539,22 +598,38 @@ public class MultiTechTransaction {
             .createBasicCardSelector()
             .filterByCardProtocol(MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL);
 
-    // Storage card selection extension enables memory operations during selection
     StorageCardSelectionExtension storageExtensionMifareUltraLight =
         StorageCardExtensionService.getInstance()
             .getStorageCardApiFactory()
             .createStorageCardSelectionExtension(ProductType.MIFARE_ULTRALIGHT)
-            // Pre-read all blocks during selection for immediate availability
             .prepareReadBlocks(0, ProductType.MIFARE_ULTRALIGHT.getBlockCount() - 1);
 
     manager.prepareSelection(mifareUltralightSelector, storageExtensionMifareUltraLight);
 
-    // ===========================================================================================
-    // SELECTION STRATEGY 3: ST25/SRT512 cards using protocol-based selection
-    // ===========================================================================================
+    // --- STRATEGY 3: MIFARE Classic (NFC Type 2*) ---
+    // If the card uses the MIFARE_CLASSIC protocol, we treat it as a MIFARE_CLASSIC_1K product.
+    logger.debug("Configuring MIFARE Classic 1K selection (protocol-based)...");
 
-    // ST25 cards are STMicroelectronics memory tags with larger capacity
-    // These are less common but useful for applications requiring more storage
+    BasicCardSelector mifareClassicSelector =
+        readerApiFactory
+            .createBasicCardSelector()
+            .filterByCardProtocol(MIFARE_CLASSIC_LOGICAL_PROTOCOL);
+
+    StorageCardSelectionExtension storageExtensionMifareClassic =
+        StorageCardExtensionService.getInstance()
+            .getStorageCardApiFactory()
+            .createStorageCardSelectionExtension(ProductType.MIFARE_CLASSIC_1K)
+            .prepareMifareClassicAuthenticate(
+                0,
+                MifareClassicKeyType.KEY_A,
+                new byte[] {
+                  (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
+                })
+            .prepareReadBlocks(0, 0); // Pre-read only block 0 (UID/Manufacturer data)
+    manager.prepareSelection(mifareClassicSelector, storageExtensionMifareClassic);
+
+    // --- STRATEGY 4: ST25/SRT512 (NFC Type 4/B) ---
+    // If the card uses the ST25_SRT512 protocol, we treat it as an ST25_SRT512 product.
     logger.debug("Configuring ST25 card selection (protocol-based)...");
 
     BasicCardSelector st25Selector =
@@ -566,12 +641,11 @@ public class MultiTechTransaction {
         StorageCardExtensionService.getInstance()
             .getStorageCardApiFactory()
             .createStorageCardSelectionExtension(ProductType.ST25_SRT512)
-            // Pre-read all blocks during selection for immediate availability
             .prepareReadBlocks(0, ProductType.ST25_SRT512.getBlockCount() - 1);
 
     manager.prepareSelection(st25Selector, storageExtensionSt25);
 
-    logger.info("Card selection configured for {} technologies", 3);
+    logger.info("Card selection configured.");
     return manager;
   }
 
@@ -586,15 +660,18 @@ public class MultiTechTransaction {
    *   <li>Activate protocol mappings for each supported card technology
    * </ol>
    *
-   * <p><b>Protocol Mapping:</b> Physical protocols (defined in PC/SC standard) are mapped to
-   * logical protocols (used by the application). This abstraction allows the same application code
-   * to work with different reader implementations.
+   * <p><b>Understanding Protocol Mapping:</b> <br>
+   * Keyple uses a "Logical Protocol" abstraction to decouple the application from physical reader
+   * capabilities. Here, we map physical protocols (as defined by the PC/SC standard or reader
+   * driver) to application-specific logical names. This allows the same application code to work
+   * with different readers by simply adjusting these mappings, without changing the core business
+   * logic.
    *
    * <p><b>Reader Settings:</b>
    *
    * <ul>
-   *   <li><b>Protocol T=1:</b> Block-oriented transmission protocol
-   *   <li><b>Shared mode:</b> Allows multiple applications to access the reader
+   *   <li><b>Protocol T=1:</b> Block-oriented transmission protocol (expected for contactless
+   *       cards)
    * </ul>
    *
    * @return Configured card reader ready for multi-technology operations
@@ -622,8 +699,7 @@ public class MultiTechTransaction {
     PcscReader pcscReader = plugin.getReaderExtension(PcscReader.class, reader.getName());
     pcscReader
         .setContactless(true) // Indicates contactless reader
-        .setIsoProtocol(PcscReader.IsoProtocol.T1) // Use T=1 protocol for block transmission
-        .setSharingMode(PcscReader.SharingMode.SHARED); // Allow reader sharing between applications
+        .setIsoProtocol(PcscReader.IsoProtocol.T1);
 
     // Configure protocol mappings for each supported card technology
     ConfigurableCardReader configReader = (ConfigurableCardReader) reader;
@@ -640,6 +716,11 @@ public class MultiTechTransaction {
     configReader.activateProtocol(
         PcscCardCommunicationProtocol.MIFARE_ULTRALIGHT.name(), // Physical protocol name
         MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL); // Logical protocol name
+
+    // MIFARE Classic protocol for NXP storage cards
+    configReader.activateProtocol(
+        PcscCardCommunicationProtocol.MIFARE_CLASSIC.name(), // Physical protocol name
+        MIFARE_CLASSIC_LOGICAL_PROTOCOL); // Logical protocol name
 
     // ST25 protocol for STMicroelectronics memory tags
     configReader.activateProtocol(
@@ -753,7 +834,7 @@ public class MultiTechTransaction {
    */
   public static void main(String[] args) {
     logger.info("=== MultiTechTransaction Demo Starting ===");
-    logger.info("This demo supports: Calypso, MIFARE Ultralight, ST25/SRT512");
+    logger.info("This demo supports: Calypso, MIFARE Ultralight, MIFARE Classic, ST25/SRT512");
     logger.info("Please ensure a compatible card is placed on the reader...");
 
     try {
@@ -812,7 +893,9 @@ public class MultiTechTransaction {
     }
 
     // Exit the application
-    // Using explicit exit to ensure JVM termination in all scenarios
+    // IMPORTANT: Explicit exit is often required in PC/SC applications to ensure that
+    // native resources (smart card context) are released immediately and that any
+    // lingering driver threads do not prevent the JVM from terminating.
     System.exit(0);
   }
 }
