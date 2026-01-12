@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "org.calypsonet.keyple.plugin.androidnfc.example.app-mergeDebugResources-25:/values-ldltr-v21/values-ldltr-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\forje\\.gradle\\caches\\8.12.1\\transforms\\aa40082dc5f309c10a2e3f27b288afc6\\transformed\\appcompat-1.7.0\\res\\values-ldltr-v21\\values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        }
+    ]
+}

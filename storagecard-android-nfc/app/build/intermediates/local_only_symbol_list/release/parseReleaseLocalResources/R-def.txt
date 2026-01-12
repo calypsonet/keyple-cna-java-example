@@ -1,0 +1,27 @@
+R_DEF: Internal format may change without notice
+local
+color colorAccent
+color colorPrimary
+color colorPrimaryDark
+color colorPrimaryLight
+color colorSecondary
+color colorSecondaryDark
+color colorSecondaryLight
+color textColorPrimary
+color textColorsecondary
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+id cardActionTextView
+id cardHeaderTextView
+id cardResultTextView
+id drawerLayout
+id messageRecyclerView
+id toolbar
+layout activity_main
+layout card_action_message
+layout card_header_message
+layout card_result_message
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+style AppTheme

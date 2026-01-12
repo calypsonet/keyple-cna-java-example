@@ -1,0 +1,4 @@
+C:\d\cna\keyple-cna-java-example\storagecard-android-nfc\app\src\main\kotlin\org\calypsonet\keyple\plugin\androidnfc\example\MessageDisplayAdapter.kt
+C:\d\cna\keyple-cna-java-example\storagecard-android-nfc\app\src\main\kotlin\org\calypsonet\keyple\plugin\androidnfc\example\CalypsoConstants.kt
+C:\d\cna\keyple-cna-java-example\storagecard-android-nfc\app\src\main\kotlin\org\calypsonet\keyple\plugin\androidnfc\example\MainActivity.kt
+C:\d\cna\keyple-cna-java-example\storagecard-android-nfc\app\src\main\kotlin\org\calypsonet\keyple\plugin\androidnfc\example\DemoApplication.kt
