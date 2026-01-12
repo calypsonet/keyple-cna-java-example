@@ -22,9 +22,9 @@ import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.calypsonet.keyple.card.storage.StorageCardExtensionService
-import org.calypsonet.keyple.card.storage.card.ProductType.MIFARE_ULTRALIGHT
-import org.calypsonet.keyple.card.storage.card.StorageCard
+import org.calypsonet.keyple.card.storagecard.StorageCardExtensionService
+import org.eclipse.keypop.storagecard.card.ProductType
+import org.eclipse.keypop.storagecard.card.StorageCard
 import org.calypsonet.keyple.plugin.androidnfc.example.MessageDisplayAdapter.Message
 import org.calypsonet.keyple.plugin.androidnfc.example.MessageDisplayAdapter.MessageType
 import org.calypsonet.keyple.plugin.androidnfc.example.databinding.ActivityMainBinding
@@ -38,7 +38,6 @@ import org.eclipse.keyple.plugin.android.nfc.AndroidNfcConstants
 import org.eclipse.keyple.plugin.android.nfc.AndroidNfcPluginFactoryProvider
 import org.eclipse.keyple.plugin.android.nfc.AndroidNfcSupportedProtocols
 import org.eclipse.keypop.calypso.card.card.CalypsoCard
-import org.eclipse.keypop.calypso.card.transaction.ChannelControl.CLOSE_AFTER
 import org.eclipse.keypop.calypso.card.transaction.FreeTransactionManager
 import org.eclipse.keypop.reader.*
 import org.eclipse.keypop.reader.ObservableCardReader.DetectionMode.REPEATING
@@ -161,7 +160,8 @@ class MainActivity :
             .createBasicCardSelector()
             .filterByCardProtocol(MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL),
         StorageCardExtensionService.getInstance()
-            .createStorageCardSelectionExtension(MIFARE_ULTRALIGHT))
+            .storageCardApiFactory
+            .createStorageCardSelectionExtension(ProductType.MIFARE_ULTRALIGHT))
     cardSelectionManager.scheduleCardSelectionScenario(cardReader, ALWAYS)
     Timber.i("Card selection prepared")
   }
@@ -233,7 +233,7 @@ class MainActivity :
               CalypsoConstants.RECORD_NUMBER_1,
               CalypsoConstants.RECORD_NUMBER_1,
               CalypsoConstants.RECORD_SIZE)
-          .processCommands(CLOSE_AFTER)
+          .processCommands(ChannelControl.CLOSE_AFTER)
     }
 
     val efEnvironmentHolder =
@@ -260,6 +260,7 @@ class MainActivity :
 
     val transactionManager =
         StorageCardExtensionService.getInstance()
+            .storageCardApiFactory
             .createStorageCardTransactionManager(cardReader, storageCard)
 
     addMessage(MessageType.ACTION, "Starting reading transaction...")
@@ -267,7 +268,7 @@ class MainActivity :
     val duration = measureTimeMillis {
       transactionManager
           .prepareReadBlocks(0, storageCard.productType.blockCount - 1)
-          .processCommands(org.calypsonet.keyple.card.storage.transaction.ChannelControl.KEEP_OPEN)
+          .processCommands(ChannelControl.KEEP_OPEN)
       val incrementedLastBlockVal =
           ByteArrayUtil.extractInt(
               storageCard.getBlock(storageCard.productType.blockCount - 1), 0, 4, false) + 1
@@ -279,8 +280,7 @@ class MainActivity :
               incrementedLastBlockVal.toByte())
       transactionManager
           .prepareWriteBlocks(storageCard.productType.blockCount - 1, newLastBlock)
-          .processCommands(
-              org.calypsonet.keyple.card.storage.transaction.ChannelControl.CLOSE_AFTER)
+          .processCommands(ChannelControl.CLOSE_AFTER)
     }
 
     val blocksContent =

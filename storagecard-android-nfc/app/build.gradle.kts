@@ -76,6 +76,7 @@ dependencies {
     implementation("org.eclipse.keyple:keyple-util-java-lib")
     implementation("org.eclipse.keyple:keyple-service-java-lib")
     implementation("org.eclipse.keyple:keyple-card-calypso-java-lib")
+    implementation("org.eclipse.keyple:keyple-plugin-android-nfc-java-lib:3.2.0-SNAPSHOT") { isChanging = true }
     // End Keyple configuration
 
     // Android components
