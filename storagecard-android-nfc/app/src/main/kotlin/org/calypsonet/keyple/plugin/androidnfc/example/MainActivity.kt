@@ -23,16 +23,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.calypsonet.keyple.card.storagecard.StorageCardExtensionService
-import org.eclipse.keypop.storagecard.MifareClassicKeyType
-import org.eclipse.keypop.storagecard.card.ProductType
-import org.eclipse.keypop.storagecard.card.StorageCard
 import org.calypsonet.keyple.plugin.androidnfc.example.MessageDisplayAdapter.Message
 import org.calypsonet.keyple.plugin.androidnfc.example.MessageDisplayAdapter.MessageType
 import org.calypsonet.keyple.plugin.androidnfc.example.databinding.ActivityMainBinding
 import org.calypsonet.keyple.plugin.storagecard.ApduInterpreterFactoryProvider
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService
 import org.eclipse.keyple.core.service.*
-import org.eclipse.keyple.core.util.ByteArrayUtil
 import org.eclipse.keyple.core.util.HexUtil
 import org.eclipse.keyple.plugin.android.nfc.AndroidNfcConfig
 import org.eclipse.keyple.plugin.android.nfc.AndroidNfcConstants
@@ -45,6 +41,9 @@ import org.eclipse.keypop.reader.ObservableCardReader.DetectionMode.REPEATING
 import org.eclipse.keypop.reader.ObservableCardReader.NotificationMode.ALWAYS
 import org.eclipse.keypop.reader.spi.CardReaderObservationExceptionHandlerSpi
 import org.eclipse.keypop.reader.spi.CardReaderObserverSpi
+import org.eclipse.keypop.storagecard.MifareClassicKeyType
+import org.eclipse.keypop.storagecard.card.ProductType
+import org.eclipse.keypop.storagecard.card.StorageCard
 import timber.log.Timber
 
 class MainActivity :
@@ -57,14 +56,14 @@ class MainActivity :
 
   private lateinit var binding: ActivityMainBinding
   private lateinit var messageDisplayAdapter: RecyclerView.Adapter<*>
+
   companion object {
-        const val ISO_14443_4_LOGICAL_PROTOCOL = "ISO_14443_4"
-        const val MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL = "MIFARE_ULTRALIGHT"
-        const val MIFARE_CLASSIC_LOGICAL_PROTOCOL = "MIFARE_CLASSIC"
-    }
+    const val ISO_14443_4_LOGICAL_PROTOCOL = "ISO_14443_4"
+    const val MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL = "MIFARE_ULTRALIGHT"
+    const val MIFARE_CLASSIC_LOGICAL_PROTOCOL = "MIFARE_CLASSIC"
+  }
+
   private val messages = arrayListOf<Message>()
-
-
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -131,7 +130,10 @@ class MainActivity :
         SmartCardServiceProvider.getService()
             .registerPlugin(
                 AndroidNfcPluginFactoryProvider.provideFactory(
-                    AndroidNfcConfig(this, ApduInterpreterFactoryProvider.provideFactory())))
+                    AndroidNfcConfig(
+                        activity = this,
+                        apduInterpreterFactory = ApduInterpreterFactoryProvider.provideFactory(),
+                        keyProvider = MifareClassicKeyProvider())))
 
     // init card reader
     cardReader = androidNfcPlugin.getReader(AndroidNfcConstants.READER_NAME) as ObservableCardReader
@@ -143,7 +145,8 @@ class MainActivity :
       activateProtocol(AndroidNfcSupportedProtocols.ISO_14443_4.name, ISO_14443_4_LOGICAL_PROTOCOL)
       activateProtocol(
           AndroidNfcSupportedProtocols.MIFARE_ULTRALIGHT.name, MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL)
-      activateProtocol(AndroidNfcSupportedProtocols.MIFARE_CLASSIC.name, MIFARE_CLASSIC_LOGICAL_PROTOCOL)
+      activateProtocol(
+          AndroidNfcSupportedProtocols.MIFARE_CLASSIC.name, MIFARE_CLASSIC_LOGICAL_PROTOCOL)
     }
   }
 
@@ -174,16 +177,7 @@ class MainActivity :
         StorageCardExtensionService.getInstance()
             .storageCardApiFactory
             .createStorageCardSelectionExtension(ProductType.MIFARE_CLASSIC_1K)
-            .prepareMifareClassicAuthenticate(
-                0,
-                MifareClassicKeyType.KEY_A,
-                byteArrayOf(
-                    0xFF.toByte(),
-                    0xFF.toByte(),
-                    0xFF.toByte(),
-                    0xFF.toByte(),
-                    0xFF.toByte(),
-                    0xFF.toByte()))
+            .prepareMifareClassicAuthenticate(0, MifareClassicKeyType.KEY_A, 0)
             .prepareReadBlocks(0, 0))
     cardSelectionManager.scheduleCardSelectionScenario(cardReader, ALWAYS)
     Timber.i("Card selection prepared")
@@ -290,16 +284,7 @@ class MainActivity :
 
     val duration = measureTimeMillis {
       if (storageCard.productType.hasAuthentication()) {
-        transactionManager.prepareMifareClassicAuthenticate(
-            4,
-            MifareClassicKeyType.KEY_A,
-            byteArrayOf(
-                0xFF.toByte(),
-                0xFF.toByte(),
-                0xFF.toByte(),
-                0xFF.toByte(),
-                0xFF.toByte(),
-                0xFF.toByte()))
+        transactionManager.prepareMifareClassicAuthenticate(4, MifareClassicKeyType.KEY_A, 0)
       }
       var startBlock = 0
       var endBlock = storageCard.productType.blockCount - 1
@@ -307,7 +292,7 @@ class MainActivity :
         startBlock = 4
         // IMPORTANT: Stop at 6. Block 7 is the Sector Trailer (Keys + Access Bits).
         // Writing to block 7 without careful calculation will brick the sector.
-        endBlock = 6 
+        endBlock = 6
       }
       transactionManager
           .prepareReadBlocks(startBlock, endBlock)
@@ -326,14 +311,16 @@ class MainActivity :
     }
 
     val blocksContent =
-        (0 until storageCard.productType.blockCount).joinToString(separator = "\n") { blockNumber ->
-          val data = storageCard.getBlock(blockNumber)
-          if (data != null && data.isNotEmpty()) {
-            "Block $blockNumber = ${HexUtil.toHex(data)}"
-          } else {
-            ""
-          }
-        }.trim()
+        (0 until storageCard.productType.blockCount)
+            .joinToString(separator = "\n") { blockNumber ->
+              val data = storageCard.getBlock(blockNumber)
+              if (data != null && data.isNotEmpty()) {
+                "Block $blockNumber = ${HexUtil.toHex(data)}"
+              } else {
+                ""
+              }
+            }
+            .trim()
     addMessage(MessageType.RESULT, "Blocks content:\n$blocksContent")
 
     addMessage(MessageType.ACTION, "Transaction duration: $duration ms")
