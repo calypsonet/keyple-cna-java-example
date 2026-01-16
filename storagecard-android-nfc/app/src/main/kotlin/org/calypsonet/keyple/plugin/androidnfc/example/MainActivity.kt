@@ -60,7 +60,7 @@ class MainActivity :
   companion object {
     const val ISO_14443_4_LOGICAL_PROTOCOL = "ISO_14443_4"
     const val MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL = "MIFARE_ULTRALIGHT"
-    const val MIFARE_CLASSIC_LOGICAL_PROTOCOL = "MIFARE_CLASSIC"
+    const val MIFARE_CLASSIC_1K_LOGICAL_PROTOCOL = "MIFARE_CLASSIC_1K"
   }
 
   private val messages = arrayListOf<Message>()
@@ -146,7 +146,7 @@ class MainActivity :
       activateProtocol(
           AndroidNfcSupportedProtocols.MIFARE_ULTRALIGHT.name, MIFARE_ULTRALIGHT_LOGICAL_PROTOCOL)
       activateProtocol(
-          AndroidNfcSupportedProtocols.MIFARE_CLASSIC.name, MIFARE_CLASSIC_LOGICAL_PROTOCOL)
+          AndroidNfcSupportedProtocols.MIFARE_CLASSIC_1K.name, MIFARE_CLASSIC_1K_LOGICAL_PROTOCOL)
     }
   }
 
@@ -173,7 +173,7 @@ class MainActivity :
         SmartCardServiceProvider.getService()
             .readerApiFactory
             .createBasicCardSelector()
-            .filterByCardProtocol(MIFARE_CLASSIC_LOGICAL_PROTOCOL),
+            .filterByCardProtocol(MIFARE_CLASSIC_1K_LOGICAL_PROTOCOL),
         StorageCardExtensionService.getInstance()
             .storageCardApiFactory
             .createStorageCardSelectionExtension(ProductType.MIFARE_CLASSIC_1K)
