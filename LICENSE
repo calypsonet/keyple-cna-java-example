@@ -1,28 +1,55 @@
-BSD 3-Clause License
+SPDX-License-Identifier: LicenseRef-CNAML
 
-Copyright (c) 2025, Calypso Networks Association
+Calypso Networks Association Member License (CNAML)
+====================================================
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+Copyright (c) 2026 Calypso Networks Association
+https://calypsonet.org/
 
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
+This Software is provided exclusively to effective members of the Calypso Networks Association ("Association").
+Your status as an effective member grants you limited rights to access, view, and modify the Software strictly for
+internal use only.
 
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
+1. Grant of Access and Rights
+-----------------------------
+Subject to the terms and conditions of this License, the Association grants you, as an effective member, a limited,
+non-exclusive, non-transferable, and non-sublicensable right to access, view, and modify the Software strictly for
+internal use. Any modifications you make are likewise restricted to internal use.
 
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
+2. Permitted Uses
+-----------------
+a. **Access and Internal Use:** You are permitted to access, use, and internally view the Software.
+b. **Modifications:** You may modify the Software for internal use only. However, you are not permitted to create
+derivative works for external distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+3. Restrictions
+---------------
+a. **Distribution:** You may not distribute, publish, or otherwise disseminate the Software, or any modified version
+thereof, to any third party outside of your internal environment.
+b. **Sublicensing and Transfer:** You are not permitted to sublicense or transfer any rights granted under this License
+to any external party.
+c. **External Derivatives:** Any derivative work or modification must be used exclusively for your internal purposes as
+an effective member of the Association.
+d. **Other Uses:** Any use, modification, distribution, or creation of derivative works not expressly permitted by this
+License requires prior written authorization from the Association.
+
+4. Termination
+--------------
+This License is effective only as long as you maintain effective membership with the Association. If your membership
+lapses or if you fail to comply with any of the terms of this License, your rights under this License will immediately
+terminate. Upon termination, you must cease all related activities and access to the Software.
+
+5. Disclaimer of Warranty
+-------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NONINFRINGEMENT. IN NO EVENT SHALL THE ASSOCIATION
+OR ITS CONTRIBUTORS BE LIABLE FOR ANY DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE SOFTWARE.
+
+6. Governing Law
+----------------
+This License shall be governed by and construed in accordance with the laws of the jurisdiction in which the
+Calypso Networks Association is headquartered, without regard to its conflict of law principles.
+
+By accessing or using the Software, you acknowledge that you have read, understood, and agree to be bound by the terms
+and conditions of this License. If you are not an effective member of the Association, you are not authorized to access
+or use the Software.

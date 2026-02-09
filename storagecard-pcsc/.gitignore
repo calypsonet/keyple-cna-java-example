@@ -1,6 +1,11 @@
 # Java class files
 *.class
 
+# Private Libraries
+# Ignore private .jar files but keep mocks.
+/libs/*.jar
+!/libs/*-mock.jar
+
 # Generated files
 gen/
 out/

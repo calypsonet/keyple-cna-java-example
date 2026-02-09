@@ -1,13 +1,13 @@
 /* **************************************************************************************
  * Copyright (c) 2025 Calypso Networks Association https://calypsonet.org/
  *
- * See the NOTICE file(s) distributed with this work for additional information
- * regarding copyright ownership.
+ * Access, distribution and usage restricted to effective members of the Calypso Networks
+ * Association.
  *
  * This program and the accompanying materials are made available under the terms of the
- * BSD 3-Clause License which is available at https://opensource.org/license/bsd-3-clause
+ * CNAML - (Calypso Networks Association Member License).
  *
- * SPDX-License-Identifier: BSD-3-Clause
+ * SPDX-License-Identifier: LicenseRef-CNAML
  ************************************************************************************** */
 package org.calypsonet.keyple.example.storagecard;
 
@@ -719,7 +719,7 @@ public class MultiTechTransaction {
 
     // MIFARE Classic protocol for NXP storage cards
     configReader.activateProtocol(
-        PcscCardCommunicationProtocol.MIFARE_CLASSIC.name(), // Physical protocol name
+        PcscCardCommunicationProtocol.MIFARE_CLASSIC_1K.name(), // Physical protocol name
         MIFARE_CLASSIC_LOGICAL_PROTOCOL); // Logical protocol name
 
     // ST25 protocol for STMicroelectronics memory tags
