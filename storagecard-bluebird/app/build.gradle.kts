@@ -60,7 +60,7 @@ dependencies {
   implementation("org.eclipse.keyple:keyple-util-java-lib:2.4.1")
   implementation("org.eclipse.keyple:keyple-service-java-lib")
   implementation("org.eclipse.keyple:keyple-card-calypso-java-lib")
-  implementation("org.eclipse.keyple:keyple-plugin-storagecard-java-api")
+  implementation("org.eclipse.keyple:keyple-plugin-storagecard-java-api:1.1.0")
   implementation("org.eclipse.keyple:keyple-card-calypso-crypto-legacysam-java-lib")
 
   // End Keyple configuration
