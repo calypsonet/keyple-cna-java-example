@@ -1,7 +1,78 @@
 # Storage Card Example - Android NFC
 
-This basic Android application demonstrates the Keyple Android NFC Java Plugin.
+This repository contains demonstration code for the `keyple-card-cna-storagecard-java-lib` using the Android NFC reader. It shows how to use this Keyple extension library to interact with storage cards (MIFARE Ultralight, MIFARE Classic, etc.) through the device's built-in NFC reader.
+
+## Description
+
+This Android NFC-specific demo illustrates the main features of the `keyple-card-cna-storagecard-java-lib`:
+- Handling of multiple storage card types through the Android NFC reader
+- Integration with standard Keyple Calypso operations
+- Automated card type detection
+- Memory operations for various storage cards
+
+## ⚠️ Important: Storage Card Library Requirement
+
+**This demo requires the official `keyple-card-cna-storagecard-java-lib` library from Calypso Networks Association.**
+
+### Getting the Library
+- The storage card extension library is **available on request to CNA members** (Calypso Networks Association)
+- **CNA membership required** - Contact: [https://calypsonet.org/](https://calypsonet.org/)
+- This is a **member-exclusive library** and is not publicly available
+
+### Installation
+1. Request the `keyple-card-cna-storagecard-java-lib-x.x.x.jar` through CNA member channels
+2. **Replace** the mock library in the `libs/` folder with the official version
+3. The mock library (`keyple-card-cna-storagecard-java-lib-x.x.x-mock.jar`) is provided only for compilation purposes and **will not work at runtime**
+
+### Library Structure
+```
+libs/
+├── keyple-card-cna-storagecard-java-lib-x.x.x-mock.jar    ← Replace with official library
+└── [other dependencies...]
+```
+
+## Supported Hardware
+
+### Readers
+This demo uses the built-in NFC reader of the Android device.
+
+### Supported Cards
+The demo supports:
+- Storage Cards (via `keyple-card-cna-storagecard-java-lib`):
+    - MIFARE Ultralight (MFOC, MFOICU1)
+    - MIFARE Classic 1K
+- Standard Calypso cards (via core Keyple)
+
+## Prerequisites
+
+- Android device with NFC support (API level 28+)
+- **Official `keyple-card-cna-storagecard-java-lib` from CNA** (available to CNA members only - see above)
+
+## Dependencies
+
+- `keyple-card-cna-storagecard-java-lib`: **Main library for storage card operations (CNA member-exclusive library)**
+- `keyple-plugin-android-nfc`: Android NFC plugin for reader communication
+- `keyple-common`: Keyple common interfaces
+- `keyple-card-calypso`: Calypso card extension
+
+## Demo Structure
+
+- `MainActivity.kt`: Main activity handling NFC reader initialization and card operations
+- `MifareClassicKeyProvider.kt`: Provides authentication keys for MIFARE Classic cards
+- `CalypsoConstants.kt`: AID and file constants for Calypso card operations
+
+## Build and Run
+
+1. Ensure you have **CNA membership** and the **official `keyple-card-cna-storagecard-java-lib`** from CNA in `libs/`
+2. Build the project with Gradle: `./gradlew assembleDebug`
+3. Install the APK on an NFC-capable Android device
+
+> **Note**: The demo will fail at runtime if using the mock library. CNA membership and the official library are required for actual card operations.
 
 ## About the source code
 
 The code is built with **Gradle** and requires **Java 17** or higher.
+
+## Copyright
+
+Copyright (c) 2025 Calypso Networks Association - [https://calypsonet.org/](https://calypsonet.org/)

@@ -40,8 +40,9 @@ This demo works exclusively with PC/SC contactless readers, such as:
 
 ### Supported Cards
 The demo supports:
-- Storage Cards (via keyple-card-storage-java-lib):
-    - MIFARE Ultralight (1st generation)
+- Storage Cards (via `keyple-card-cna-storagecard-java-lib`):
+    - MIFARE Ultralight (MFOC, MFOICU1)
+    - MIFARE Classic 1K
     - ST Microelectronics ST25 / SRT512
 - Standard Calypso cards (via core Keyple)
 
