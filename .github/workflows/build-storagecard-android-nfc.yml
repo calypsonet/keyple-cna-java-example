@@ -61,3 +61,4 @@ jobs:
         uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
         with:
           build-root-directory: storagecard-android-nfc
+          dependency-graph-continue-on-failure: true
