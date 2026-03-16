@@ -1,10 +1,10 @@
-# Keyple Card Storage Java Library - PC/SC Demo
+# Storage Card Example - PC/SC
 
-This repository contains demonstration code for the `keyple-card-storage-java-lib` using PC/SC readers. It shows how to use this Keyple extension library to interact with storage cards (MIFARE Ultralight, ST25, etc.) through PC/SC contactless readers.
+This repository contains demonstration code for the `keyple-card-cna-storagecard-java-lib` using PC/SC readers. It shows how to use this Keyple extension library to interact with storage cards (MIFARE Ultralight, ST25, etc.) through PC/SC contactless readers.
 
 ## Description
 
-This PC/SC-specific demo illustrates the main features of the `keyple-card-storage-java-lib`:
+This PC/SC-specific demo illustrates the main features of the `keyple-card-cna-storagecard-java-lib`:
 - Handling of multiple storage card types through PC/SC readers
 - Integration with standard Keyple Calypso operations
 - Automated card type detection using PC/SC ATR patterns
@@ -12,7 +12,7 @@ This PC/SC-specific demo illustrates the main features of the `keyple-card-stora
 
 ## ⚠️ Important: Storage Card Library Requirement
 
-**This demo requires the official `keyple-card-storage-java-lib` library from Calypso Networks Association.**
+**This demo requires the official `keyple-card-cna-storagecard-java-lib` library from Calypso Networks Association.**
 
 ### Getting the Library
 - The storage card extension library is **available on request to CNA members** (Calypso Networks Association)
@@ -50,11 +50,11 @@ The demo supports:
 - Java Development Kit (JDK) 8 or higher
 - PC/SC middleware installed on your system
 - A compatible PC/SC contactless reader
-- **Official `keyple-card-storage-java-lib` from CNA** (available to CNA members only - see above)
+- **Official `keyple-card-cna-storagecard-java-lib` from CNA** (available to CNA members only - see above)
 
 ## Dependencies
 
-- `keyple-card-storage-java-lib`: **Main library for storage card operations (CNA member-exclusive library)**
+- `keyple-card-cna-storagecard-java-lib`: **Main library for storage card operations (CNA member-exclusive library)**
 - `keyple-plugin-pcsc`: PC/SC plugin for reader communication (required)
 - `keyple-common`: Keyple common interfaces
 - `keyple-card-calypso`: Calypso card extension
@@ -65,7 +65,7 @@ The demo supports:
 
 ## Build and Run
 
-1. Ensure you have **CNA membership** and the **official storage card library** from CNA in `libs/`
+1. Ensure you have **CNA membership** and the **official `keyple-card-cna-storagecard-java-lib`** from CNA in `libs/`
 2. Build the project with Gradle
 3. Run the demo: `java -cp ... MultiTechTransaction`
 
