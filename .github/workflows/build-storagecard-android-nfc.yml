@@ -1,23 +1,19 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# This workflow will build an Android project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
 
-name: Java CI with Gradle
+name: Android CI with Gradle (NFC)
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - 'storagecard-pcsc/**'
-      - '.github/workflows/build-storagecard-pcsc.yml'
+      - 'storagecard-android-nfc/**'
+      - '.github/workflows/build-storagecard-android-nfc.yml'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'storagecard-pcsc/**'
-      - '.github/workflows/build-storagecard-pcsc.yml'
+      - 'storagecard-android-nfc/**'
+      - '.github/workflows/build-storagecard-android-nfc.yml'
   workflow_dispatch:
 
 jobs:
@@ -40,11 +36,11 @@ jobs:
         uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
       - name: Grant execute permission for gradlew
-        run: chmod +x storagecard-pcsc/gradlew
+        run: chmod +x storagecard-android-nfc/gradlew
 
-      - name: Build storagecard-pcsc project
-        working-directory: storagecard-pcsc
-        run: ./gradlew build
+      - name: Build storagecard-android-nfc project
+        working-directory: storagecard-android-nfc
+        run: ./gradlew assembleDebug
 
   dependency-submission:
     runs-on: ubuntu-latest
@@ -59,9 +55,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Generates and submits a dependency graph for the storagecard-pcsc project
+      # Generates and submits a dependency graph for the storagecard-android-nfc project
       # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
         with:
-          build-root-directory: storagecard-pcsc
+          build-root-directory: storagecard-android-nfc
